@@ -18,10 +18,10 @@ BTGhostController::BTGhostController(std::shared_ptr<Character> character):Contr
 	filter->addCondition(std::make_shared<Powerpill>());
 	filter->addAction(std::make_shared<Frightened>());
 	root->addChild(filter);
-	auto filter2 = std::make_shared<Filter>();
+	/*auto filter2 = std::make_shared<Filter>();
 	filter2->addCondition(std::make_shared<TimeOut>());
 	filter2->addAction(std::make_shared<Scatter>());
-	root->addChild(filter2);
+	root->addChild(filter2);*/
 	root->addChild(std::make_shared<Chase>());
 
 }
@@ -101,15 +101,41 @@ Status Frightened::update(){
 	//std::cerr << " Frightened \n" ;
 	auto character = Info::getInfo()->in_character;
 	auto gs = Info::getInfo()->in_gamestate;
+
+	auto target = gs->getMaze().getNodePos(gs->getPacmanPos());
+
+	float maxDist = -1.0f;
+	Move bestMove = PASS;
+	
 	std::vector<Move> moves;
+
 	if(character->getDirection()==PASS) {
 		moves=gs->getMaze().getPossibleMoves(character->getPos());
 	} else {
-		moves = gs->getMaze().getGhostLegalMoves(character->getPos(), character->getDirection());
+		moves = gs->getMaze().getGhostLegalMoves(
+            character->getPos(),
+            character->getDirection()
+		);
+			
 	}
-	Move m = moves[rand()%moves.size()];
-	Info::getInfo()->out_move = m;
-	return BH_SUCCESS; //NO es as� pero por ahora
+	for(auto move : moves) {
+        if(move == PASS) break;
+
+        auto nextPos = gs->getMaze().getNodePos(
+            gs->getMaze().getNeighbour(character->getPos(), move)
+        );
+
+        float dist = euclid2(target, nextPos);
+
+		// Maximizar distancia = huir
+		if(dist > maxDist) {
+            maxDist = dist;
+            bestMove = move;
+        }
+    }
+
+    Info::getInfo()->out_move = bestMove;
+    return BH_SUCCESS;
 }
 
 Scatter :: Scatter() : Behavior(){
