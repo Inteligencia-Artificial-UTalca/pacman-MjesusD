@@ -12,7 +12,7 @@
 #include <random>
 #include "FSM.h"
 
-class BlinkyStateMachine;
+/*class BlinkyStateMachine;
 
 class FSMController: public Controller {
 	std::mt19937 e;
@@ -50,5 +50,5 @@ public:
 	Move update(const GameState& gs) override;
 	~BlinkyStateMachine();
 
-};
+};*/
 #endif /* FSMCONTROLLER_H_ */
