@@ -54,6 +54,14 @@ public:
 	int getPacmanDir() const {
 		return pacman->getDirection();
 	}
+
+	//Getter para BT
+	const std::vector<std::shared_ptr<Ghost>>&
+	getGhosts() const {
+
+		return ghosts;
+	}
+
 	bool won() const;
 	bool lost() const;
 	void reset(std::string map);
