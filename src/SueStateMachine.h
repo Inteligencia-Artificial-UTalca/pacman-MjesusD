@@ -1,6 +1,6 @@
 
-#ifndef BLINKYSTATEMACHINE_H_
-#define BLINKYSTATEMACHINE_H_
+#ifndef SUESTATEMACHINE_H_
+#define SUESTATEMACHINE_H_
 
 #include "FSM.h"
 #include "Controller.h"
@@ -9,7 +9,7 @@
 //////////////////////////////// TRANSITIONS //////////////////////////////////
 
 
-class TimerTransition : public FSMTransition {
+class SueTimerTransition : public FSMTransition {
 
 private:
 
@@ -20,7 +20,7 @@ private:
 
 public:
 
-	TimerTransition(
+	SueTimerTransition(
 		std::shared_ptr<FSMState> next,
 		int limit
 	);
@@ -33,7 +33,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class PowerPelletTransition : public FSMTransition {
+class SuePowerPelletTransition : public FSMTransition {
 
 private:
 
@@ -42,7 +42,7 @@ private:
 
 public:
 
-	PowerPelletTransition(
+	SuePowerPelletTransition(
 		std::shared_ptr<Character> character,
 
 		std::shared_ptr<FSMState> next
@@ -56,7 +56,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 
-class FrightenedEndTransition : public FSMTransition {
+class SueFrightenedEndTransition : public FSMTransition {
 
 private:
 
@@ -67,7 +67,7 @@ private:
 
 public:
 
-	FrightenedEndTransition(
+	SueFrightenedEndTransition(
 		std::shared_ptr<FSMState> next,
 		int limit = 300
 	);
@@ -79,61 +79,61 @@ public:
 };
 
 
-//////////////////////////////// ChaseState ///////////////////////////////////
+//////////////////////////////// SueChaseState ///////////////////////////////////
 
 
-class ChaseState : public FSMState {
+class SueChaseState : public FSMState {
 
 public:
 
-	ChaseState(std::shared_ptr<Character> _character);
+	SueChaseState(std::shared_ptr<Character> _character);
 
 	Move onUpdate(const GameState& gs) override;
 
 	void onEnter(const GameState& gs) override;
 
-	~ChaseState();
+	~SueChaseState();
 };
 
 
-/////////////////////////////// ScatterState //////////////////////////////////
+/////////////////////////////// SueScatterState //////////////////////////////////
 
 
-class ScatterState : public FSMState {
+class SueScatterState : public FSMState {
 
 public:
 
-	ScatterState(std::shared_ptr<Character> _character);
+	SueScatterState(std::shared_ptr<Character> _character);
 
 	Move onUpdate(const GameState& gs) override;
 
 	void onEnter(const GameState& gs) override;
 
-	~ScatterState();
+	~SueScatterState();
 };
 
 
-//////////////////////////// FrightenedState /////////////////////////////////
+//////////////////////////// SueFrightenedState /////////////////////////////////
 
 
-class FrightenedState : public FSMState {
+class SueFrightenedState : public FSMState {
 
 public:
 
-	FrightenedState(std::shared_ptr<Character> _character);
+	SueFrightenedState(std::shared_ptr<Character> _character);
 
 	Move onUpdate(const GameState& gs) override;
 
 	void onEnter(const GameState& gs) override;
 
-	~FrightenedState();
+	~SueFrightenedState();
 };
 
 
-/////////////////////////// NonFrightenedState ////////////////////////////////
+/////////////////////////// SueNonFrightenedState ////////////////////////////////
 
 
-class NonFrightenedState : public FSMState {
+class SueNonFrightenedState : public FSMState {
 
 private:
 
@@ -145,7 +145,7 @@ private:
 
 public:
 
-	NonFrightenedState(
+	SueNonFrightenedState(
 		std::shared_ptr<Character> _character
 	);
 
@@ -155,24 +155,24 @@ public:
 
 	void onExit(const GameState& gs) override;
 
-	~NonFrightenedState();
+	~SueNonFrightenedState();
 };
 
 
-/////////////////////////// BlinkyStateMachine ////////////////////////////////
+/////////////////////////// SueStateMachine ////////////////////////////////
 
 
-class BlinkyStateMachine : public FiniteStateMachine {
+class SueStateMachine : public FiniteStateMachine {
 
 public:
 
-	BlinkyStateMachine(
+	SueStateMachine(
 		std::shared_ptr<Character> _character
 	);
 
 	Move update(const GameState& gs) override;
 
-	~BlinkyStateMachine();
+	~SueStateMachine();
 };
 
-#endif /* BLINKYSTATEMACHINE_H_ */
+#endif /* SueStateMachine_H_ */

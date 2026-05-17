@@ -1,9 +1,9 @@
-#include "BlinkyStateMachine.h"
+#include "SueStateMachine.h"
 #include <iostream>
 
-/////////////////////////////// TimerTransition ////////////////////////////////
+/////////////////////////////// SueTimerTransition ////////////////////////////////
 
-TimerTransition::TimerTransition(
+SueTimerTransition::SueTimerTransition(
 	std::shared_ptr<FSMState> next,
 	int l
 ):
@@ -13,7 +13,7 @@ TimerTransition::TimerTransition(
 
 }
 
-bool TimerTransition::isValid(const GameState&){
+bool SueTimerTransition::isValid(const GameState&){
 
 	counter++;
 
@@ -28,14 +28,14 @@ bool TimerTransition::isValid(const GameState&){
 }
 
 std::shared_ptr<FSMState>
-TimerTransition::getNextState(){
+SueTimerTransition::getNextState(){
 
 	return _next;
 }
 
-/////////////////////////// PowerPelletTransition /////////////////////////////
+/////////////////////////// SuePowerPelletTransition /////////////////////////////
 
-PowerPelletTransition::PowerPelletTransition(
+SuePowerPelletTransition::SuePowerPelletTransition(
 	std::shared_ptr<Character> c,
 	std::shared_ptr<FSMState> next
 ):
@@ -45,7 +45,7 @@ PowerPelletTransition::PowerPelletTransition(
 }
 
 
-bool PowerPelletTransition::isValid(
+bool SuePowerPelletTransition::isValid(
 	const GameState&
 ){
 
@@ -65,14 +65,14 @@ bool PowerPelletTransition::isValid(
 }
 
 std::shared_ptr<FSMState>
-PowerPelletTransition::getNextState(){
+SuePowerPelletTransition::getNextState(){
 
 	return _next;
 }
 
-///////////////////////// FrightenedEndTransition /////////////////////////////
+///////////////////////// SueFrightenedEndTransition /////////////////////////////
 
-FrightenedEndTransition::FrightenedEndTransition(
+SueFrightenedEndTransition::SueFrightenedEndTransition(
 	std::shared_ptr<FSMState> next,
 	int l
 ):
@@ -82,7 +82,7 @@ FrightenedEndTransition::FrightenedEndTransition(
 
 }
 
-bool FrightenedEndTransition::isValid(
+bool SueFrightenedEndTransition::isValid(
 	const GameState&
 ){
 
@@ -99,28 +99,28 @@ bool FrightenedEndTransition::isValid(
 }
 
 std::shared_ptr<FSMState>
-FrightenedEndTransition::getNextState(){
+SueFrightenedEndTransition::getNextState(){
 
 	return _next;
 }
 
-//////////////////////////////// ChaseState ///////////////////////////////////
+/////////////////////////////// SueChaseState /////////////////////////////////
 
-ChaseState::ChaseState(
+SueChaseState::SueChaseState(
 	std::shared_ptr<Character> _character
 ):
 	FSMState(_character){
 
 }
 
-void ChaseState::onEnter(const GameState&){
+void SueChaseState::onEnter(const GameState&){
 
 	std::dynamic_pointer_cast<Ghost>(
 		character
 	)->revert();
 }
 
-Move ChaseState::onUpdate(
+Move SueChaseState::onUpdate(
 	const GameState& game
 ){
 
@@ -133,6 +133,11 @@ Move ChaseState::onUpdate(
 
 	const auto myPos = character->getPos();
 
+	const auto myCoord =
+		game.getMaze().getNodePos(
+			myPos
+		);
+
 	if(character->getDirection() == PASS){
 
 		moves =
@@ -149,12 +154,30 @@ Move ChaseState::onUpdate(
 			);
 	}
 
-	//
-
 	if(moves.empty()){
 		return PASS;
 	}
 
+	//////////////////// comportamiento especial ////////////////////
+
+	std::pair<int,int> target;
+
+	float dist =
+		euclid2(
+			myCoord,
+			pacmanCoord
+		);
+
+	// si está cerca, escapar
+	if(dist < 64.0f){
+        	target =
+		game.getMaze().getPowerPillPositions()[0];
+	}
+	else{
+
+		// perseguir
+		target = pacmanCoord;
+	}
 
 	float min =
 		euclid2(
@@ -164,14 +187,14 @@ Move ChaseState::onUpdate(
 					moves[0]
 				)
 			),
-			pacmanCoord
+			target
 		);
 
 	int minI = 0;
 
 	for(unsigned int i=1;i<moves.size();i++){
 
-		auto dist =
+		auto distMove =
 			euclid2(
 				game.getMaze().getNodePos(
 					game.getMaze().getNeighbour(
@@ -179,12 +202,12 @@ Move ChaseState::onUpdate(
 						moves[i]
 					)
 				),
-				pacmanCoord
+				target
 			);
 
-		if(dist < min){
+		if(distMove < min){
 
-			min = dist;
+			min = distMove;
 
 			minI = i;
 		}
@@ -193,27 +216,27 @@ Move ChaseState::onUpdate(
 	return moves[minI];
 }
 
-ChaseState::~ChaseState(){
+SueChaseState::~SueChaseState(){
 
 }
 
-/////////////////////////////// ScatterState //////////////////////////////////
+/////////////////////////////// SueScatterState //////////////////////////////////
 
-ScatterState::ScatterState(
+SueScatterState::SueScatterState(
 	std::shared_ptr<Character> _character
 ):
 	FSMState(_character){
 
 }
 
-void ScatterState::onEnter(const GameState&){
+void SueScatterState::onEnter(const GameState&){
 
 	std::dynamic_pointer_cast<Ghost>(
 		character
 	)->revert();
 }
 
-Move ScatterState::onUpdate(
+Move SueScatterState::onUpdate(
 	const GameState& game
 ){
 
@@ -237,18 +260,14 @@ Move ScatterState::onUpdate(
 			);
 	}
 
-
 	if(moves.empty()){
 		return PASS;
 	}
 
-	// Corner seguro temporal
-	int targetCorner = myPos;
+	///////////////// esquina inferior izquierda //////////////////
 
 	const auto targetCoord =
-		game.getMaze().getNodePos(
-			targetCorner
-		);
+	game.getMaze().getPowerPillPositions()[0];
 
 	float min =
 		euclid2(
@@ -287,27 +306,27 @@ Move ScatterState::onUpdate(
 	return moves[minI];
 }
 
-ScatterState::~ScatterState(){
+SueScatterState::~SueScatterState(){
 
 }
 
-//////////////////////////// FrightenedState /////////////////////////////////
+//////////////////////////// SueFrightenedState /////////////////////////////////
 
-FrightenedState::FrightenedState(
+SueFrightenedState::SueFrightenedState(
 	std::shared_ptr<Character> _character
 ):
 	FSMState(_character){
 
 }
 
-void FrightenedState::onEnter(const GameState&){
+void SueFrightenedState::onEnter(const GameState&){
 
 	std::dynamic_pointer_cast<Ghost>(
 		character
 	)->revert();
 }
 
-Move FrightenedState::onUpdate(
+Move SueFrightenedState::onUpdate(
 	const GameState& game
 ){
 
@@ -343,36 +362,36 @@ Move FrightenedState::onUpdate(
 	return moves[r];
 }
 
-FrightenedState::~FrightenedState(){
+SueFrightenedState::~SueFrightenedState(){
 
 }
 
-/////////////////////////// NonFrightenedState ////////////////////////////////
+/////////////////////////// SueNonFrightenedState ////////////////////////////////
 
-NonFrightenedState::NonFrightenedState(
+SueNonFrightenedState::SueNonFrightenedState(
 	std::shared_ptr<Character> _character
 ):
 	FSMState(_character)
 {
 	chaseState =
-		std::make_shared<ChaseState>(
+		std::make_shared<SueChaseState>(
 			character
 		);
 
 	scatterState =
-		std::make_shared<ScatterState>(
+		std::make_shared<SueScatterState>(
 			character
 		);
 
 	chaseState->addTransition(
-		std::make_shared<TimerTransition>(
+		std::make_shared<SueTimerTransition>(
 			scatterState,
 			300
 		)
 	);
 
 	scatterState->addTransition(
-		std::make_shared<TimerTransition>(
+		std::make_shared<SueTimerTransition>(
 			chaseState,
 			120
 		)
@@ -381,19 +400,19 @@ NonFrightenedState::NonFrightenedState(
 	activeState = chaseState;
 }
 
-void NonFrightenedState::onEnter(
+void SueNonFrightenedState::onEnter(
 	const GameState& gs
 ){
 	activeState->onEnter(gs);
 }
 
-void NonFrightenedState::onExit(
+void SueNonFrightenedState::onExit(
 	const GameState& gs
 ){
 	activeState->onExit(gs);
 }
 
-Move NonFrightenedState::onUpdate(
+Move SueNonFrightenedState::onUpdate(
 	const GameState& gs
 ){
 
@@ -415,36 +434,36 @@ Move NonFrightenedState::onUpdate(
 	return activeState->onUpdate(gs);
 }
 
-NonFrightenedState::~NonFrightenedState(){
+SueNonFrightenedState::~SueNonFrightenedState(){
 
 }
 
-/////////////////////////// BlinkyStateMachine ////////////////////////////////
+/////////////////////////// SueStateMachine ////////////////////////////////
 
-BlinkyStateMachine::BlinkyStateMachine(
+SueStateMachine::SueStateMachine(
 	std::shared_ptr<Character> _character
 ):
 	FiniteStateMachine(_character)
 {
 	auto nonFrightened =
-		std::make_shared<NonFrightenedState>(
+		std::make_shared<SueNonFrightenedState>(
 			character
 		);
 
 	auto frightened =
-		std::make_shared<FrightenedState>(
+		std::make_shared<SueFrightenedState>(
 			character
 		);
 
 	nonFrightened->addTransition(
-		std::make_shared<PowerPelletTransition>(
+		std::make_shared<SuePowerPelletTransition>(
 			character,
 			frightened
 		)
 	);
 
 	frightened->addTransition(
-		std::make_shared<FrightenedEndTransition>(
+		std::make_shared<SueFrightenedEndTransition>(
 			nonFrightened,
 			300
 		)
@@ -458,7 +477,7 @@ BlinkyStateMachine::BlinkyStateMachine(
 	states.push_back(frightened);
 }
 
-Move BlinkyStateMachine::update(
+Move SueStateMachine::update(
 	const GameState& gs
 ){
 
@@ -480,6 +499,6 @@ Move BlinkyStateMachine::update(
 	return activeState->onUpdate(gs);
 }
 
-BlinkyStateMachine::~BlinkyStateMachine(){
+SueStateMachine::~SueStateMachine(){
 
 }
