@@ -25,6 +25,7 @@ public:
     const GameState* in_gamestate;
     Move out_move;
     std::shared_ptr<Character> in_character;
+    std::shared_ptr<Character> blinky;
 };
 
 class BTGhostController: public Controller {
@@ -73,6 +74,13 @@ private:
 public:
     virtual Status update() override;
     TimeOut ();
+};
+
+class InkyChase : public Behavior{
+
+public:
+
+    virtual Status update() override;
 };
 
 #endif /* BTGHOSTCONTROLLER_H_ */

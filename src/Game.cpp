@@ -41,12 +41,13 @@ gv(std::make_unique<GameView>(std::vector<std::string>{"images/maze-a.png","imag
 		ghosts.push_back(ghost);
 	}
 	gameState.addGhosts(ghosts);
+	Info::getInfo()->blinky = ghosts[0];
 	ghostsControl.push_back(std::make_shared<BlinkyController>(ghosts[0]));
 	ghostsControl.push_back(std::make_shared<PinkyController>(ghosts[1]));
 	ghostsControl.push_back(std::make_shared<SueController>(ghosts[2]));
-	ghostsControl.push_back(std::make_shared<RandomController>(ghosts[3]));
+	//ghostsControl.push_back(std::make_shared<RandomController>(ghosts[3]));
 	//  ghostsControl.push_back(std::make_shared<BlinkyController>(ghosts[0]));
-	//  ghostsControl.push_back(std::make_shared<InkyController>(ghosts[1]));
+	  ghostsControl.push_back(std::make_shared<InkyController>(ghosts[3]));
 	//  ghostsControl.push_back(std::make_shared<PinkyController>(ghosts[2]));
 	//  ghostsControl.push_back(std::make_shared<SimpleController>(ghosts[3]));
 }
