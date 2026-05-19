@@ -109,11 +109,18 @@ FrightenedEndTransition::getNextState(){
 ChaseState::ChaseState(
 	std::shared_ptr<Character> _character
 ):
-	FSMState(_character){
+	FSMState(_character), firstEnter(true){
 
 }
 
 void ChaseState::onEnter(const GameState&){
+
+	if(firstEnter){
+
+		firstEnter = false;
+
+		return;
+	}
 
 	std::dynamic_pointer_cast<Ghost>(
 		character
@@ -217,11 +224,18 @@ ChaseState::~ChaseState(){
 ScatterState::ScatterState(
 	std::shared_ptr<Character> _character
 ):
-	FSMState(_character){
+	FSMState(_character), firstEnter(true){
 
 }
 
 void ScatterState::onEnter(const GameState&){
+
+	if(firstEnter){
+
+		firstEnter = false;
+
+		return;
+	}
 
 	std::dynamic_pointer_cast<Ghost>(
 		character
@@ -310,11 +324,18 @@ ScatterState::~ScatterState(){
 FrightenedState::FrightenedState(
 	std::shared_ptr<Character> _character
 ):
-	FSMState(_character){
+	FSMState(_character), firstEnter(true){
 
 }
 
 void FrightenedState::onEnter(const GameState&){
+
+	if(firstEnter){
+
+		firstEnter = false;
+
+		return;
+	}
 
 	std::dynamic_pointer_cast<Ghost>(
 		character

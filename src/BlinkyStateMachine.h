@@ -84,6 +84,10 @@ public:
 
 class ChaseState : public FSMState {
 
+private:
+
+bool firstEnter;
+
 public:
 
 	ChaseState(std::shared_ptr<Character> _character);
@@ -91,8 +95,6 @@ public:
 	Move onUpdate(const GameState& gs) override;
 
 	void onEnter(const GameState& gs) override;
-	
-	bool firstEnter;
 
 	~ChaseState();
 };
@@ -102,6 +104,10 @@ public:
 
 
 class ScatterState : public FSMState {
+
+private:
+
+bool firstEnter;
 
 public:
 
@@ -119,6 +125,10 @@ public:
 
 
 class FrightenedState : public FSMState {
+
+private:
+
+bool firstEnter;
 
 public:
 
