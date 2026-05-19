@@ -91,6 +91,8 @@ public:
 	Move onUpdate(const GameState& gs) override;
 
 	void onEnter(const GameState& gs) override;
+	
+	bool firstEnter;
 
 	~ChaseState();
 };

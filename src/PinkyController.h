@@ -22,3 +22,8 @@ public:
 		const GameState& game
 	) override;
 };
+
+class PinkyChase : public Behavior{
+public:
+	virtual Status update() override;
+};

@@ -22,3 +22,10 @@ public:
 		const GameState& game
 	) override;
 };
+
+class InkyChase : public Behavior{
+
+public:
+
+    virtual Status update() override;
+};

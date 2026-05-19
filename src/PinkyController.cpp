@@ -46,9 +46,109 @@ PinkyController::PinkyController(
 	//////////////////// ChaseState /////////////////////////
 
 	root->addChild(
-		std::make_shared<Chase>()
+		std::make_shared<PinkyChase>()
 	);
 }
+
+/////////////////////////// Comportamiento Pinky //////////////////////////////
+
+Status PinkyChase::update(){
+
+	auto character =
+		Info::getInfo()->in_character;
+
+	auto gs =
+		Info::getInfo()->in_gamestate;
+
+	//////////////// posición objetivo ////////////////////
+
+	auto target =
+		gs->getMaze().getNodePos(
+			gs->getPacmanPos()
+		);
+
+	/////////////// Pinky apunta delante de Pacman /////////
+
+	switch(gs->getPacmanDir()){
+
+		case UP:
+			target.second -= 64;
+			break;
+
+		case DOWN:
+			target.second += 64;
+			break;
+
+		case LEFT:
+			target.first -= 64;
+			break;
+
+		case RIGHT:
+			target.first += 64;
+			break;
+
+		default:
+			break;
+	}
+
+	///////////////////////////////////////////////////////
+
+	float min = 1000000000;
+
+	Move minMove = PASS;
+
+	std::vector<Move> moves;
+
+	if(character->getDirection() == PASS){
+
+		moves =
+			gs->getMaze().getPossibleMoves(
+				character->getPos()
+			);
+	}
+	else{
+
+		moves =
+			gs->getMaze().getGhostLegalMoves(
+				character->getPos(),
+				character->getDirection()
+			);
+	}
+
+	for(auto move : moves){
+
+		if(move == PASS){
+			break;
+		}
+
+		auto nextPos =
+			gs->getMaze().getNodePos(
+				gs->getMaze().getNeighbour(
+					character->getPos(),
+					move
+				)
+			);
+
+		float dist =
+			euclid2(
+				target,
+				nextPos
+			);
+
+		if(dist < min){
+
+			min = dist;
+
+			minMove = move;
+		}
+	}
+
+	Info::getInfo()->out_move =
+		minMove;
+
+	return BH_SUCCESS;
+}
+
 
 PinkyController::~PinkyController(){
 
@@ -68,3 +168,5 @@ Move PinkyController::getMove(
 
 	return Info::getInfo()->out_move;
 }
+
+

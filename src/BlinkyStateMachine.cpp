@@ -133,6 +133,16 @@ Move ChaseState::onUpdate(
 
 	const auto myPos = character->getPos();
 
+	int pillsLeft = game.getMaze().getPillPositions().size();
+
+	bool cruiseElroy = false;
+
+	// mientras menos pills queden, blinky entra en modo agresivo
+
+	if(pillsLeft < 10){
+		cruiseElroy = true;
+	}
+	
 	if(character->getDirection() == PASS){
 
 		moves =
@@ -155,8 +165,7 @@ Move ChaseState::onUpdate(
 		return PASS;
 	}
 
-
-	float min =
+	float bestValue =
 		euclid2(
 			game.getMaze().getNodePos(
 				game.getMaze().getNeighbour(
@@ -171,24 +180,30 @@ Move ChaseState::onUpdate(
 
 	for(unsigned int i=1;i<moves.size();i++){
 
-		auto dist =
-			euclid2(
-				game.getMaze().getNodePos(
-					game.getMaze().getNeighbour(
-						myPos,
-						moves[i]
-					)
-				),
-				pacmanCoord
-			);
+	auto dist =
+		euclid2(
+			game.getMaze().getNodePos(
+				game.getMaze().getNeighbour(
+					myPos,
+					moves[i]
+				)
+			),
+			pacmanCoord
+		);
 
-		if(dist < min){
+	if(cruiseElroy){
 
-			min = dist;
-
-			minI = i;
-		}
+		// hace a Blinky más directo/agresivo
+		dist *= 0.5f;
 	}
+
+	if(dist < bestValue){
+
+		bestValue = dist;
+
+		minI = i;
+	}
+}
 
 	return moves[minI];
 }
@@ -237,13 +252,12 @@ Move ScatterState::onUpdate(
 			);
 	}
 
-
 	if(moves.empty()){
 		return PASS;
 	}
 
 	// Corner seguro temporal
-	int targetCorner = myPos;
+	int targetCorner = 0;
 
 	const auto targetCoord =
 		game.getMaze().getNodePos(
@@ -337,7 +351,6 @@ Move FrightenedState::onUpdate(
 		return PASS;
 	}
 
-
 	int r = rand() % moves.size();
 
 	return moves[r];
@@ -397,19 +410,28 @@ Move NonFrightenedState::onUpdate(
 	const GameState& gs
 ){
 
-	auto t =
-		activeState->getActiveTransition(gs);
+	int pillsLeft =
+		gs.getMaze().getPillPositions().size();
 
-	if(t != nullptr){
+	bool cruiseElroy =
+		(pillsLeft < 10);
 
-		activeState->onExit(gs);
+	if(!cruiseElroy){
 
-		t->onTransition(gs);
+		auto t =
+			activeState->getActiveTransition(gs);
 
-		activeState =
-			t->getNextState();
+		if(t != nullptr){
 
-		activeState->onEnter(gs);
+			activeState->onExit(gs);
+
+			t->onTransition(gs);
+
+			activeState =
+				t->getNextState();
+
+			activeState->onEnter(gs);
+		}
 	}
 
 	return activeState->onUpdate(gs);

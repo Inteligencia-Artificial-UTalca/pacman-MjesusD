@@ -76,11 +76,6 @@ public:
     TimeOut ();
 };
 
-class InkyChase : public Behavior{
 
-public:
-
-    virtual Status update() override;
-};
 
 #endif /* BTGHOSTCONTROLLER_H_ */
