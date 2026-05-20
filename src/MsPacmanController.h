@@ -92,6 +92,23 @@ public:
 	Move getMove(
 		const GameState& game
 	) override;
+
+	///////////////////////////////////////////////////////////////////////////
+	// STATIC HELPERS
+	///////////////////////////////////////////////////////////////////////////
+
+	static Move getClosestMove(
+		const GameState& game,
+		int currentPos,
+		std::pair<int,int> target
+	);
+
+	static Move getFarthestMove(
+		const GameState& game,
+		int currentPos,
+		std::pair<int,int> target
+	);
 };
 
 #endif /* MSPACMANCONTROLLER_H_ */
+

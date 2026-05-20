@@ -138,18 +138,10 @@ Move ChaseState::onUpdate(
 			game.getPacmanPos()
 		);
 
-	const auto myPos = character->getPos();
+	const auto myPos =
+		character->getPos();
 
-	int pillsLeft = game.getMaze().getPillPositions().size();
 
-	bool cruiseElroy = false;
-
-	// mientras menos pills queden, blinky entra en modo agresivo
-
-	if(pillsLeft < 10){
-		cruiseElroy = true;
-	}
-	
 	if(character->getDirection() == PASS){
 
 		moves =
@@ -166,8 +158,6 @@ Move ChaseState::onUpdate(
 			);
 	}
 
-	//
-
 	if(moves.empty()){
 		return PASS;
 	}
@@ -183,36 +173,29 @@ Move ChaseState::onUpdate(
 			pacmanCoord
 		);
 
-	int minI = 0;
+	int bestIndex = 0;
 
 	for(unsigned int i=1;i<moves.size();i++){
 
-	auto dist =
-		euclid2(
-			game.getMaze().getNodePos(
-				game.getMaze().getNeighbour(
-					myPos,
-					moves[i]
-				)
-			),
-			pacmanCoord
-		);
+		float dist =
+			euclid2(
+				game.getMaze().getNodePos(
+					game.getMaze().getNeighbour(
+						myPos,
+						moves[i]
+					)
+				),
+				pacmanCoord
+			);
 
-	if(cruiseElroy){
+		if(dist < bestValue){
 
-		// hace a Blinky más directo/agresivo
-		dist *= 0.5f;
+			bestValue = dist;
+			bestIndex = i;
+		}
 	}
 
-	if(dist < bestValue){
-
-		bestValue = dist;
-
-		minI = i;
-	}
-}
-
-	return moves[minI];
+	return moves[bestIndex];
 }
 
 ChaseState::~ChaseState(){
@@ -248,7 +231,8 @@ Move ScatterState::onUpdate(
 
 	std::vector<Move> moves;
 
-	const auto myPos = character->getPos();
+	const auto myPos =
+		character->getPos();
 
 	if(character->getDirection() == PASS){
 
@@ -270,7 +254,6 @@ Move ScatterState::onUpdate(
 		return PASS;
 	}
 
-	// Corner seguro temporal
 	int targetCorner = 0;
 
 	const auto targetCoord =
@@ -278,7 +261,7 @@ Move ScatterState::onUpdate(
 			targetCorner
 		);
 
-	float min =
+	float bestValue =
 		euclid2(
 			game.getMaze().getNodePos(
 				game.getMaze().getNeighbour(
@@ -289,11 +272,11 @@ Move ScatterState::onUpdate(
 			targetCoord
 		);
 
-	int minI = 0;
+	int bestIndex = 0;
 
 	for(unsigned int i=1;i<moves.size();i++){
 
-		auto dist =
+		float dist =
 			euclid2(
 				game.getMaze().getNodePos(
 					game.getMaze().getNeighbour(
@@ -304,15 +287,14 @@ Move ScatterState::onUpdate(
 				targetCoord
 			);
 
-		if(dist < min){
+		if(dist < bestValue){
 
-			min = dist;
-
-			minI = i;
+			bestValue = dist;
+			bestIndex = i;
 		}
 	}
 
-	return moves[minI];
+	return moves[bestIndex];
 }
 
 ScatterState::~ScatterState(){
@@ -348,7 +330,8 @@ Move FrightenedState::onUpdate(
 
 	std::vector<Move> moves;
 
-	const auto myPos = character->getPos();
+	const auto myPos =
+		character->getPos();
 
 	if(character->getDirection() == PASS){
 
@@ -365,8 +348,6 @@ Move FrightenedState::onUpdate(
 				character->getDirection()
 			);
 	}
-
-	//
 
 	if(moves.empty()){
 		return PASS;
@@ -435,7 +416,9 @@ Move NonFrightenedState::onUpdate(
 		gs.getMaze().getPillPositions().size();
 
 	bool cruiseElroy =
-		(pillsLeft < 10);
+		(pillsLeft < 30);
+
+	// Cuando Cruise Elroy se activa blinky deja de hacer Scatter
 
 	if(!cruiseElroy){
 

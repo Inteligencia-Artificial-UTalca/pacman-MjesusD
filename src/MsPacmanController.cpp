@@ -1,4 +1,3 @@
-
 #include "MsPacmanController.h"
 
 #include <SDL2/SDL.h>
@@ -6,6 +5,7 @@
 #include <iostream>
 #include <limits>
 #include <chrono>
+#include <cmath>
 
 ////////////////////////// CONTROLLER /////////////////////////////////////////
 
@@ -16,14 +16,12 @@ MsPacmanController::MsPacmanController(
 	root(std::make_shared<Selector>())
 {
 
-
 /////////////////////////// HIGH PRIORITY /////////////////////////////////////
-
 
 	auto dangerSelector =
 		std::make_shared<Selector>();
 
-	///////////////////////// EAT EDIBLE GHOST /////////////////////////////////
+///////////////////////// EAT EDIBLE GHOST /////////////////////////////////
 
 	auto eatGhostFilter =
 		std::make_shared<Filter>();
@@ -40,7 +38,25 @@ MsPacmanController::MsPacmanController(
 		eatGhostFilter
 	);
 
-	//////////////////////////// ESCAPE ///////////////////////////////////////
+
+//////////////////////// SEEK POWER PILL //////////////////////////////////
+
+	auto powerPillFilter =
+		std::make_shared<Filter>();
+
+	powerPillFilter->addCondition(
+		std::make_shared<MsPowerPillAvailable>()
+	);
+
+	powerPillFilter->addAction(
+		std::make_shared<MsSeekPowerPill>()
+	);
+
+	dangerSelector->addChild(
+		powerPillFilter
+	);
+
+//////////////////////////// ESCAPE ///////////////////////////////////////
 
 	auto escapeFilter =
 		std::make_shared<Filter>();
@@ -64,40 +80,16 @@ MsPacmanController::MsPacmanController(
 
 //////////////////////////// MID PRIORITY /////////////////////////////////////
 
+	auto objectiveSelector = std::make_shared<Selector>();
 
-	auto objectiveSelector =
-		std::make_shared<Selector>();
+	
 
-	//////////////////////// SEEK POWER PILL //////////////////////////////////
+//////////////////////////// SEEK PILL ////////////////////////////////////
 
-	auto powerPillFilter =
-		std::make_shared<Filter>();
-
-	powerPillFilter->addCondition(
-		std::make_shared<MsPowerPillAvailable>()
-	);
-
-	powerPillFilter->addAction(
-		std::make_shared<MsSeekPowerPill>()
-	);
-
-	objectiveSelector->addChild(
-		powerPillFilter
-	);
-
-	//////////////////////////// SEEK PILL ////////////////////////////////////
-
-	objectiveSelector->addChild(
-		std::make_shared<MsSeekPill>()
-	);
-
-	root->addChild(
-		objectiveSelector
-	);
-
+	objectiveSelector->addChild( std::make_shared<MsSeekPill>() ); 
+	root->addChild( objectiveSelector );
 
 //////////////////////////// LOW PRIORITY /////////////////////////////////////
-
 
 	root->addChild(
 		std::make_shared<MsRandomMoveAction>()
@@ -108,9 +100,109 @@ MsPacmanController::~MsPacmanController(){
 
 }
 
+////////////////////////// CLOSEST MOVE ///////////////////////////////////////
+
+Move MsPacmanController::getClosestMove(
+	const GameState& game,
+	int currentPos,
+	std::pair<int,int> target
+){
+
+	int minDist = 99999999;
+
+	Move bestMove = PASS;
+
+	auto moves =
+		game.getMaze().getPossibleMoves(
+			currentPos
+		);
+
+	for(auto move : moves){
+
+		int neighbour =
+			game.getMaze().getNeighbour(
+				currentPos,
+				move
+			);
+
+		if(neighbour < 0){
+			continue;
+		}
+
+		auto nextCoord =
+			game.getMaze().getNodePos(
+				neighbour
+			);
+
+		int dist =
+			euclid2(nextCoord,target);
+
+		if(dist < minDist){
+
+			minDist = dist;
+			bestMove = move;
+		}
+	}
+
+	if(bestMove == PASS && !moves.empty()){ 
+		bestMove = moves[0]; 
+	}
+
+	return bestMove;
+}
+
+////////////////////////// FARTHEST MOVE //////////////////////////////////////
+
+Move MsPacmanController::getFarthestMove(
+	const GameState& game,
+	int currentPos,
+	std::pair<int,int> target
+){
+
+	int maxDist = -1;
+
+	Move bestMove = PASS;
+
+	auto moves =
+		game.getMaze().getPossibleMoves(
+			currentPos
+		);
+
+	for(auto move : moves){
+
+		int neighbour =
+			game.getMaze().getNeighbour(
+				currentPos,
+				move
+			);
+
+		if(neighbour < 0){
+			continue;
+		}
+
+		auto nextCoord =
+			game.getMaze().getNodePos(
+				neighbour
+			);
+
+		int dist =
+			euclid2(nextCoord,target);
+
+		if(dist > maxDist){
+
+			maxDist = dist;
+			bestMove = move;
+		}
+	}
+
+	if(bestMove == PASS && !moves.empty()){ 
+		bestMove = moves[0]; 
+	}
+	
+	return bestMove;
+}
 
 //////////////////////////////// GET MOVE /////////////////////////////////////
-
 
 Move MsPacmanController::getMove(
 	const GameState& game
@@ -143,40 +235,36 @@ Move MsPacmanController::getMove(
 	Info::getInfo()->in_gamestate =
 		&game;
 
-	auto start =
-		std::chrono::high_resolution_clock::now();
+	
+	Status result = root->tick();
 
-	root->tick();
+	if(result == BH_FAILURE){
 
-	auto end =
-		std::chrono::high_resolution_clock::now();
+	auto moves =
+		game.getMaze().getPossibleMoves(
+			character->getPos()
+		);
 
-	std::chrono::duration<double> diff =
-		end - start;
+		if(!moves.empty()){
 
-	std::cout
-		<< "Ms Pacman BT Time: "
-		<< diff.count()
-		<< " seconds\n";
+			Info::getInfo()->out_move =
+				moves[0];
+		}
+	}
 
 	return Info::getInfo()->out_move;
 }
 
-
 /////////////////////////// GHOST NEARBY //////////////////////////////////////
-
 
 Status MsGhostNearby::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
-
 	auto myCoord =
 		gs->getMaze().getNodePos(
-			character->getPos()
+			Info::getInfo()->in_character->getPos()
 		);
 
 	for(auto ghost : gs->getGhosts()){
@@ -191,10 +279,7 @@ Status MsGhostNearby::update(){
 			);
 
 		float dist =
-			euclid2(
-				myCoord,
-				ghostCoord
-			);
+			sqrt(euclid2(myCoord,ghostCoord));
 
 		if(dist < 5.0f){
 
@@ -205,21 +290,16 @@ Status MsGhostNearby::update(){
 	return BH_FAILURE;
 }
 
-
 //////////////////////// EDIBLE GHOST NEARBY //////////////////////////////////
-
 
 Status MsEdibleGhostNearby::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
-
 	auto myCoord =
 		gs->getMaze().getNodePos(
-			character->getPos()
+			Info::getInfo()->in_character->getPos()
 		);
 
 	for(auto ghost : gs->getGhosts()){
@@ -234,12 +314,9 @@ Status MsEdibleGhostNearby::update(){
 			);
 
 		float dist =
-			euclid2(
-				myCoord,
-				ghostCoord
-			);
+			sqrt(euclid2(myCoord,ghostCoord));
 
-		if(dist < 10.0f){
+		if(dist < 7.0f){
 
 			return BH_SUCCESS;
 		}
@@ -248,17 +325,12 @@ Status MsEdibleGhostNearby::update(){
 	return BH_FAILURE;
 }
 
-
 //////////////////////// POWER PILL AVAILABLE /////////////////////////////////
-
 
 Status MsPowerPillAvailable::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
-
-	auto character =
-		Info::getInfo()->in_character;
 
 	auto powers =
 		gs->getMaze().getPowerPillPositions();
@@ -270,10 +342,9 @@ Status MsPowerPillAvailable::update(){
 
 	auto myCoord =
 		gs->getMaze().getNodePos(
-			character->getPos()
+			Info::getInfo()->in_character->getPos()
 		);
 
-	// buscalibre un fantasma peligroso está cerca
 	for(auto ghost : gs->getGhosts()){
 
 		if(ghost->isEdible()){
@@ -286,12 +357,9 @@ Status MsPowerPillAvailable::update(){
 			);
 
 		float dist =
-			euclid2(
-				myCoord,
-				ghostCoord
-			);
+			sqrt(euclid2(myCoord,ghostCoord));
 
-		if(dist < 6.0f){
+		if(dist < 20.0f){
 
 			return BH_SUCCESS;
 		}
@@ -300,164 +368,118 @@ Status MsPowerPillAvailable::update(){
 	return BH_FAILURE;
 }
 
-
 //////////////////////////////// ESCAPE ///////////////////////////////////////
-
 
 Status MsEscape::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
+	int currentPos =
+		Info::getInfo()->in_character->getPos();
 
-	auto moves =
-		gs->getMaze().getPossibleMoves(
-			character->getPos()
+	auto myCoord =
+		gs->getMaze().getNodePos(
+			currentPos
 		);
 
-	float bestScore = -1.0f;
+	float danger = -1.0f;
 
 	Move bestMove = PASS;
 
-	for(auto move : moves){
+	for(auto ghost : gs->getGhosts()){
 
-		int neighbour =
-			gs->getMaze().getNeighbour(
-				character->getPos(),
-				move
-			);
-
-		if(neighbour == -1){
+		if(ghost->isEdible()){
 			continue;
 		}
 
-		auto nextCoord =
+		auto ghostCoord =
 			gs->getMaze().getNodePos(
-				neighbour
+				ghost->getPos()
 			);
 
-		float nearestGhost = std::numeric_limits<float>::max();
+		float dist =
+			sqrt(euclid2(myCoord,ghostCoord));
 
-		for(auto ghost : gs->getGhosts()){
+		float fear =
+			1.0f -
+			1.0f /
+			(1.0f + pow(2.718f * 0.45f,-dist + 32.0f));
 
-			if(ghost->isEdible()){
-				continue;
-			}
+		if(fear > danger){
 
-			auto ghostCoord =
-				gs->getMaze().getNodePos(
-					ghost->getPos()
-				);
+			danger = fear;
 
-			float dist =
-				euclid2(
-					nextCoord,
+			bestMove =
+				MsPacmanController::getFarthestMove(
+					*gs,
+					currentPos,
 					ghostCoord
 				);
-
-			if(dist < nearestGhost){
-
-				nearestGhost = dist;
-			}
-		}
-
-		if(nearestGhost > bestScore){
-
-			bestScore = nearestGhost;
-
-			bestMove = move;
 		}
 	}
 
 	if(bestMove == PASS){
+		return BH_FAILURE;
+	}
 
-	    return BH_FAILURE;
-    }
+	Info::getInfo()->out_move =
+		bestMove;
 
-    Info::getInfo()->out_move =
-	    bestMove;
-
-    return BH_SUCCESS;
+	return BH_SUCCESS;
 }
 
-
 ////////////////////////////// EAT GHOST //////////////////////////////////////
-
 
 Status MsEatGhost::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
+	int currentPos =
+		Info::getInfo()->in_character->getPos();
 
-	auto moves =
-		gs->getMaze().getPossibleMoves(
-			character->getPos()
+	auto myCoord =
+		gs->getMaze().getNodePos(
+			currentPos
 		);
 
-	if(moves.empty()){
-
-		return BH_FAILURE;
-	}
-
-	float bestDist =
-		std::numeric_limits<float>::max();
+	float hunger = 0.0f;
 
 	Move bestMove = PASS;
 
-	for(auto move : moves){
+	for(auto ghost : gs->getGhosts()){
 
-		int neighbour =
-			gs->getMaze().getNeighbour(
-				character->getPos(),
-				move
-			);
-
-		if(neighbour == -1){
+		if(!ghost->isEdible()){
 			continue;
 		}
 
-		auto nextCoord =
+		auto ghostCoord =
 			gs->getMaze().getNodePos(
-				neighbour
+				ghost->getPos()
 			);
 
-		for(auto ghost : gs->getGhosts()){
+		float dist =
+			sqrt(euclid2(myCoord,ghostCoord));
 
-			if(!ghost->isEdible()){
-				continue;
-			}
+		float desire =
+			pow(100.0f - dist,2) /
+			pow(100.0f,2);
 
-			auto ghostCoord =
-				gs->getMaze().getNodePos(
-					ghost->getPos()
-				);
+		if(desire > hunger){
 
-			float dist =
-				euclid2(
-					nextCoord,
+			hunger = desire;
+
+			bestMove =
+				MsPacmanController::getClosestMove(
+					*gs,
+					currentPos,
 					ghostCoord
 				);
-
-			// evitar perseguir fantasmas demasiado lejos
-			if(dist > 10.0f){
-				continue;
-			}
-
-			if(dist < bestDist){
-
-				bestDist = dist;
-				bestMove = move;
-			}
 		}
 	}
 
 	if(bestMove == PASS){
-
 		return BH_FAILURE;
 	}
 
@@ -469,78 +491,50 @@ Status MsEatGhost::update(){
 
 /////////////////////////// SEEK POWER PILL ///////////////////////////////////
 
-
 Status MsSeekPowerPill::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
+	int currentPos =
+		Info::getInfo()->in_character->getPos();
+
+	auto myCoord =
+		gs->getMaze().getNodePos(
+			currentPos
+		);
 
 	auto powers =
 		gs->getMaze().getPowerPillPositions();
 
 	if(powers.empty()){
-
 		return BH_FAILURE;
 	}
 
-	auto myCoord =
-		gs->getMaze().getNodePos(
-			character->getPos()
-		);
-
-	auto moves =
-		gs->getMaze().getPossibleMoves(
-			character->getPos()
-		);
-
-	if(moves.empty()){
-
-		return BH_FAILURE;
-	}
-
-	float bestGlobalDist =
+	float bestDist =
 		std::numeric_limits<float>::max();
 
 	Move bestMove = PASS;
 
-	for(auto move : moves){
+	for(auto power : powers){
 
-		int neighbour =
-			gs->getMaze().getNeighbour(
-				character->getPos(),
-				move
-			);
+		float dist =
+			euclid2(myCoord,power);
 
-		if(neighbour == -1){
-			continue;
-		}
+		if(dist < bestDist){
 
-		auto nextCoord =
-			gs->getMaze().getNodePos(
-				neighbour
-			);
+			bestDist = dist;
 
-		for(auto powerCoord : powers){
-
-			float dist =
-				euclid2(
-					nextCoord,
-					powerCoord
+			bestMove =
+				MsPacmanController::getClosestMove(
+					*gs,
+					currentPos,
+					power
 				);
-
-			if(dist < bestGlobalDist){
-
-				bestGlobalDist = dist;
-				bestMove = move;
-			}
 		}
 	}
 
 	if(bestMove == PASS){
-
 		return BH_FAILURE;
 	}
 
@@ -550,96 +544,71 @@ Status MsSeekPowerPill::update(){
 	return BH_SUCCESS;
 }
 
-
 //////////////////////////// SEEK PILL ////////////////////////////////////////
-
 
 Status MsSeekPill::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
+	int currentPos =
+		Info::getInfo()->in_character->getPos();
+
+	auto myCoord =
+		gs->getMaze().getNodePos(
+			currentPos
+		);
 
 	auto pills =
 		gs->getMaze().getPillPositions();
 
 	if(pills.empty()){
-
 		return BH_FAILURE;
 	}
-
-	auto moves =
-		gs->getMaze().getPossibleMoves(
-			character->getPos()
-		);
 
 	float bestDist =
 		std::numeric_limits<float>::max();
 
 	Move bestMove = PASS;
 
-	for(auto move : moves){
+	for(auto pill : pills){
 
-		int neighbour =
-			gs->getMaze().getNeighbour(
-				character->getPos(),
-				move
-			);
+		float dist =
+			euclid2(myCoord,pill);
 
-		if(neighbour == -1){
-			continue;
-		}
+		if(dist < bestDist){
 
-		auto nextCoord =
-			gs->getMaze().getNodePos(
-				neighbour
-			);
+			bestDist = dist;
 
-		for(auto pillCoord : pills){
-
-			float dist =
-				euclid2(
-					pillCoord,
-					nextCoord
+			bestMove =
+				MsPacmanController::getClosestMove(
+					*gs,
+					currentPos,
+					pill
 				);
-
-			if(dist < bestDist){
-
-				bestDist = dist;
-
-				bestMove = move;
-			}
 		}
 	}
 
 	if(bestMove == PASS){
+		return BH_FAILURE;
+	}
 
-	  return BH_FAILURE;
+	Info::getInfo()->out_move =
+		bestMove;
 
-    }
-
-    Info::getInfo()->out_move = bestMove;
-
-    return BH_SUCCESS;
+	return BH_SUCCESS;
 }
 
-
 //////////////////////////// RANDOM ///////////////////////////////////////////
-
 
 Status MsRandomMoveAction::update(){
 
 	auto gs =
 		Info::getInfo()->in_gamestate;
 
-	auto character =
-		Info::getInfo()->in_character;
-
 	auto moves =
 		gs->getMaze().getPossibleMoves(
-			character->getPos()
+			Info::getInfo()->in_character->getPos()
 		);
 
 	if(moves.empty()){
@@ -652,3 +621,4 @@ Status MsRandomMoveAction::update(){
 
 	return BH_SUCCESS;
 }
+

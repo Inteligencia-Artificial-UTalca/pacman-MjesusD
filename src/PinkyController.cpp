@@ -72,21 +72,20 @@ Status PinkyChase::update(){
 	switch(gs->getPacmanDir()){
 
 		case UP:
-			target.second -= 64;
+			target.second -= 4;
 			break;
 
 		case DOWN:
-			target.second += 64;
+			target.second += 4;
 			break;
 
 		case LEFT:
-			target.first -= 64;
+			target.first -= 4;
 			break;
 
 		case RIGHT:
-			target.first += 64;
+			target.first += 4;
 			break;
-
 		default:
 			break;
 	}
@@ -118,15 +117,22 @@ Status PinkyChase::update(){
 	for(auto move : moves){
 
 		if(move == PASS){
-			break;
+			continue;
+		}
+
+		int neighbour =
+			gs->getMaze().getNeighbour(
+				character->getPos(),
+				move
+			);
+
+		if(neighbour == -1){
+			continue;
 		}
 
 		auto nextPos =
 			gs->getMaze().getNodePos(
-				gs->getMaze().getNeighbour(
-					character->getPos(),
-					move
-				)
+				neighbour
 			);
 
 		float dist =
