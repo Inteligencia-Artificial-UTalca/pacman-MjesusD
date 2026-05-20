@@ -20,6 +20,7 @@
 #include "PinkyController.h"
 #include "SueController.h"
 #include "PacmanController.h"
+#include "MsPacmanController.h"
 
 extern bool quick;
 extern bool nogui;
@@ -32,7 +33,7 @@ gv(std::make_unique<GameView>(std::vector<std::string>{"images/maze-a.png","imag
 	auto pacman=std::make_shared<MsPacMan>(gameState.getMaze().getPacmanStart());
 	gameState.addPacMan(pacman);
 	//pacmanControl=std::make_shared<KeyboardController>(pacman);
-	pacmanControl=std::make_shared<SimplePacmanController>(pacman);
+	pacmanControl=std::make_shared<MsPacmanController>(pacman);
 	// pacmanControl=std::make_shared<PacmanController>(pacman);
 
 	std::vector<std::shared_ptr<Ghost>> ghosts;
